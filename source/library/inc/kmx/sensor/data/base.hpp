@@ -1,7 +1,8 @@
 /// @copyright Copyright (c) 2025 - present KMX Systems. All rights reserved.
 /// @file sensor/data/base.hpp
-/// @brief Defines an enumeration for sensor units and a conversion function to
-/// string_view.
+/// @brief Defines an enumeration for sensor units and a conversion function to string_view and
+/// a template base class for representing and managing scaled sensor values using compile-time
+/// configuration via sensor_traits, with optional storage.
 #pragma once
 #ifndef PCH
     #include <algorithm>
