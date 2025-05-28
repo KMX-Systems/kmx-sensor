@@ -112,6 +112,20 @@ namespace kmx::sensor::data
         /// @brief Default constructor. Initializes the sensor value to an undefined state (empty optional).
         constexpr base() noexcept: scaled_value_ {} {} // Initializes to std::nullopt
 
+        /// @brief Constructor to initialize with a raw scaled storage value.
+        /// @details The provided `raw_initial_value` will be validated against the sensor's
+        ///          min_scaled_value() and max_scaled_value(). If valid, the sensor will be
+        ///          initialized with this value. If invalid, the sensor will be in an
+        ///          undefined (empty optional) state.
+        /// @param raw_initial_value The initial raw scaled integer value to set.
+        constexpr explicit base(const storage_type raw_initial_value) noexcept:
+            scaled_value_ {(raw_initial_value >= static_min_scaled_value) && // Use pre-calculated static members directly
+                                   (raw_initial_value <= static_max_scaled_value) ?
+                               std::optional<storage_type> {raw_initial_value} :
+                               std::nullopt}
+        {
+        }
+
         /// @brief Constructor to initialize with a specific value.
         /// @param initial_value The initial value to set. The value will be clamped and quantized.
         ///                      The sensor will have a defined value after this constructor.
@@ -198,23 +212,6 @@ namespace kmx::sensor::data
         [[nodiscard]] static constexpr storage_type max_scaled_storage_value() noexcept { return static_max_scaled_value; }
 
     protected:
-        /// @brief The internally stored scaled sensor value.
-        /// @details This optional member holds the sensor's value in its scaled, integer representation.
-        ///          If the optional is empty (std::nullopt), the sensor's value is considered undefined.
-        ///          Otherwise, it contains the current scaled value.
-        std::optional<storage_type> scaled_value_;
-
-        /// @brief The numerator used in calculating the scaling factor. Typically 1.0.
-        /// @details This constant, along with `traits_type::resolution`, determines the `scale_factor`.
-        ///          It's defined as a separate constant for potential future flexibility or clarity in the scaling formula.
-        static constexpr input_type scale_numerator = static_cast<input_type>(1.0);
-
-        /// @brief The scaling factor used to convert between physical and scaled values.
-        /// @details Calculated as `scale_numerator / traits_type::resolution`.
-        ///          Multiplying a physical value by this factor yields the unrounded scaled value.
-        ///          Dividing a scaled value (cast to input_type) by this factor yields the physical value.
-        static constexpr input_type scale_factor = scale_numerator / traits_type::resolution;
-
         /// @brief Converts a physical value (which should already be clamped) to its scaled integer representation.
         /// @details This static constexpr method performs the scaling by multiplying with `scale_factor`,
         ///          rounds the result to the nearest integer, and then casts it to `storage_type`.
@@ -239,6 +236,17 @@ namespace kmx::sensor::data
             return scaled_val_as_input / scale_factor;
         }
 
+        /// @brief The numerator used in calculating the scaling factor. Typically 1.0.
+        /// @details This constant, along with `traits_type::resolution`, determines the `scale_factor`.
+        ///          It's defined as a separate constant for potential future flexibility or clarity in the scaling formula.
+        static constexpr input_type scale_numerator = static_cast<input_type>(1.0);
+
+        /// @brief The scaling factor used to convert between physical and scaled values.
+        /// @details Calculated as `scale_numerator / traits_type::resolution`.
+        ///          Multiplying a physical value by this factor yields the unrounded scaled value.
+        ///          Dividing a scaled value (cast to input_type) by this factor yields the physical value.
+        static constexpr input_type scale_factor = scale_numerator / traits_type::resolution;
+
         /// @brief The minimum valid scaled integer value, pre-calculated at compile time.
         /// @details This is derived by converting `traits_type::min_value` using `convert_to_scaled`.
         ///          It's used for validating raw scaled input.
@@ -248,6 +256,12 @@ namespace kmx::sensor::data
         /// @details This is derived by converting `traits_type::max_value` using `convert_to_scaled`.
         ///          It's used for validating raw scaled input.
         static constexpr storage_type static_max_scaled_value = convert_to_scaled(traits_type::max_value);
+
+        /// @brief The internally stored scaled sensor value.
+        /// @details This optional member holds the sensor's value in its scaled, integer representation.
+        ///          If the optional is empty (std::nullopt), the sensor's value is considered undefined.
+        ///          Otherwise, it contains the current scaled value.
+        std::optional<storage_type> scaled_value_;
     };
 
 } // namespace sensor::data
